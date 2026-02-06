@@ -14,6 +14,7 @@ import { IconCalendarMonth, IconClock } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const userData = sessionStorage.getItem("tm_user");
   const theme = useMantineTheme();
   const navigate = useNavigate();
 
@@ -33,7 +34,9 @@ export default function Dashboard() {
         padding: 12,
       }}
     >
-      <Text style={{ fontSize: 36 }}>Welcome, John Doe! 👋</Text>
+      <Text style={{ fontSize: 36 }}>
+        Welcome, {userData ? JSON.parse(userData).fullName : "User"}! 👋
+      </Text>
       <Text c="dimmed" size="sm">
         Manage your lunch subscription and daily tokens
       </Text>

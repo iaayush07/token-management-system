@@ -8,12 +8,12 @@ export default async function validateSignup(
   res: Response,
   next: NextFunction,
 ) {
-  const { full_name, email, password, role } = req.body || {};
+  const { fullName, email, password, role } = req.body || {};
 
-  if (typeof full_name !== "string" || full_name.trim().length < 2) {
+  if (typeof fullName !== "string" || fullName.trim().length < 2) {
     return res
       .status(400)
-      .json({ message: "full_name must be at least 2 characters" });
+      .json({ message: "fullName must be at least 2 characters" });
   }
 
   if (typeof email !== "string" || !EMAIL_REGEX.test(email.trim())) {
@@ -41,7 +41,7 @@ export default async function validateSignup(
     req.body.role = normalizedRole;
   }
 
-  req.body.full_name = full_name.trim();
+  req.body.fullName = fullName.trim();
   req.body.email = email.trim().toLowerCase();
 
   try {

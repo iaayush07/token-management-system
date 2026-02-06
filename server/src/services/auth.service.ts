@@ -15,9 +15,9 @@ export async function createUser(
     await client.query("BEGIN");
 
     const userResult = await client.query(
-      `INSERT INTO users (full_name, email, password)
+      `INSERT INTO users ("fullName", email, password)
        VALUES ($1, $2, $3)
-       RETURNING id, full_name, email`,
+       RETURNING id, "fullName", email`,
       [full_name, email, hashedPassword],
     );
 
@@ -44,7 +44,7 @@ export async function createUser(
 
     return {
       id: user.id,
-      full_name: user.full_name,
+      fullName: user.fullName,
       email: user.email,
       role: role.toUpperCase(),
     };
@@ -61,7 +61,7 @@ export async function loginUser(email: string, password: string) {
   try {
     // 1️⃣ Find user by email
     const userResult = await client.query(
-      `SELECT u.id, u.full_name, u.email, u.password, r.name as role
+      `SELECT u.id, u."fullName" as full_name, u.email, u.password, r.name as role
        FROM users u
        JOIN user_roles ur ON u.id = ur.user_id
        JOIN roles r ON ur.role_id = r.id
