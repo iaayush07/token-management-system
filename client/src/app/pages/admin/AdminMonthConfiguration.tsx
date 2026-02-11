@@ -1,27 +1,39 @@
-import { useState, useMemo } from "react";
 import {
   Box,
-  Text,
-  Grid,
   Card,
-  Group,
   Divider,
-  ThemeIcon,
-  Title,
-  Switch,
+  Grid,
+  Group,
   SimpleGrid,
   Stack,
+  Switch,
   Table,
+  Text,
+  ThemeIcon,
 } from "@mantine/core";
 import { IconCalendar } from "@tabler/icons-react";
+import { useMemo } from "react";
+import {
+  useGetEnrollmentStatusQuery,
+  useToggleEnrollmentMutation,
+} from "../employee/utility/services/enrollmentService";
 import { useGetSubsribersQuery } from "./utility/services/subscribers.service";
 
 const AdminMonthConfiguration = () => {
   // Query remains; hook can later feed real counts if available
   const { data: subscribers } = useGetSubsribersQuery({ month: "2026-02" });
-  console.log(subscribers, typeof subscribers);
 
-  const [enrollmentOpen, setEnrollmentOpen] = useState(true);
+  const now = useMemo(() => new Date(), []);
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // 1-12
+
+  const {
+    data: enrollmentStatus,
+    isFetching,
+    refetch,
+  } = useGetEnrollmentStatusQuery({ year, month });
+  const [toggleEnrollment, { isLoading: isToggling }] =
+    useToggleEnrollmentMutation();
 
   const currentMonthLabel = useMemo(() => {
     const now = new Date();
@@ -69,11 +81,21 @@ const AdminMonthConfiguration = () => {
               <Group justify="space-between">
                 <Text fw={600}>Enrollment Status</Text>
                 <Switch
-                  checked={enrollmentOpen}
-                  onChange={(e) => setEnrollmentOpen(e.currentTarget.checked)}
+                  checked={enrollmentStatus?.is_open ?? false}
+                  onChange={async (e) => {
+                    try {
+                      await toggleEnrollment({
+                        year,
+                        month,
+                        isOpen: e.currentTarget.checked,
+                      }).unwrap();
+                      refetch();
+                    } catch {}
+                  }}
                   onLabel="Open"
                   offLabel="Closed"
                   size="md"
+                  disabled={isFetching || isToggling}
                 />
               </Group>
 

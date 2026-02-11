@@ -5,12 +5,17 @@ export function useEnsurePermissions() {
   const ensuredRef = useRef(false);
   const [ensuring, setEnsuring] = useState(false);
   const permissions = sessionStorage.getItem("tm_permissions");
+  const hasPermissions =
+    !!permissions && permissions !== "null" && permissions !== "undefined";
+
   const token =
     localStorage.getItem("tm_token") || sessionStorage.getItem("tm_token");
-  const { refetch } = useMeQuery(undefined, { skip: !!permissions || !token });
+  console.log(hasPermissions || !token);
+  const { refetch } = useMeQuery(undefined, { skip: hasPermissions || !token });
 
   useEffect(() => {
-    if (!token) return;
+    // Do not trigger fetch if we already have permissions in session
+    if (!token || hasPermissions) return;
 
     ensuredRef.current = true;
     setEnsuring(true);
@@ -31,7 +36,7 @@ export function useEnsurePermissions() {
         setEnsuring(false);
       }
     })();
-  }, [refetch, token, permissions]);
+  }, [refetch, token, hasPermissions]);
 
   return { ensuringPermissions: ensuring };
 }

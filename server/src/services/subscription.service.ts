@@ -35,12 +35,12 @@ export async function upsertSubscription(
   await pool.query(
     `
     INSERT INTO subscriptions (
-      userId,
-      planName,
+      "userId",
+      "planName",
       status,
-      startDate,
-      endDate,
-      subscriptionMonth
+      "startDate",
+      "endDate",
+      "subscriptionMonth"
     )
     VALUES (
       $1,
@@ -50,13 +50,30 @@ export async function upsertSubscription(
       $5,
       date_trunc('month', $4::date)
     )
-    ON CONFLICT (userId, subscriptionMonth)
+    ON CONFLICT ("userId", "subscriptionMonth")
     DO UPDATE SET
-      planName = EXCLUDED.planName,
+      "planName" = EXCLUDED."planName",
       status = EXCLUDED.status,
-      startDate = EXCLUDED.startDate,
-      endDate = EXCLUDED.endDate
+      "startDate" = EXCLUDED."startDate",
+      "endDate" = EXCLUDED."endDate"
     `,
     [userId, planName, status, startDate, endDate],
   );
+}
+
+export async function isEnrollmentOpen(month: string): Promise<boolean> {
+  // month format expected: 'YYYY-MM'
+  const result = await pool.query(
+    `
+    SELECT is_open
+    FROM enrollment_periods
+    WHERE year = EXTRACT(YEAR FROM to_date($1 || '-01', 'YYYY-MM-DD'))
+      AND month = EXTRACT(MONTH FROM to_date($1 || '-01', 'YYYY-MM-DD'))
+    `,
+    [month],
+  );
+
+  if (result.rows.length === 0) return false;
+
+  return result.rows[0].is_open;
 }

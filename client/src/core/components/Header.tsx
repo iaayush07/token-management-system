@@ -20,8 +20,6 @@ const Header = () => {
     ? JSON.parse(sessionStorage.getItem("tm_user")!).fullName
     : "User";
 
-  console.log(userName);
-
   const brandLight = theme.colors["brand"][3] || theme.colors.gray[1];
   const brandBase = theme.colors["brand"][6] || theme.colors.gray[5];
 

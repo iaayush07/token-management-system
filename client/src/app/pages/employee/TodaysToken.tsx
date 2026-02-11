@@ -1,51 +1,48 @@
 import {
   Box,
-  Text,
   Card,
-  Stack,
   Center,
-  Group,
-  Avatar,
-  Badge,
   Divider,
   Grid,
   List,
+  Stack,
+  Text,
   useMantineTheme,
 } from "@mantine/core";
-import { IconClock, IconQrcode } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import QRCode from "react-qr-code";
+import { useGenerateQRMutation } from "./utility/services/employee.service";
 
 export default function TodaysToken() {
   const theme = useMantineTheme();
-  const [remaining, setRemaining] = useState<string>("--:--:--");
-
-  const blueLight = theme.colors.blue[3];
-  const blueBase = theme.colors.blue[6];
-
-  const expiry = useMemo(() => {
-    const d = new Date();
-    d.setHours(14, 0, 0, 0); // 2:00 PM today
-    return d;
-  }, []);
+  const [token, setToken] = useState<string | null>(null);
+  const raw = sessionStorage.getItem("tm_user");
+  const user = raw ? JSON.parse(raw) : null;
+  const [triggerGenerateQR, { isLoading: generating }] =
+    useGenerateQRMutation();
 
   useEffect(() => {
-    const tick = () => {
-      const now = new Date();
-      const diff = expiry.getTime() - now.getTime();
-      if (diff <= 0) {
-        setRemaining("Expired");
-        return;
+    if (token !== null) return; // Token already generated for this session
+    if (!user?.id || generating) return;
+    const generate = async () => {
+      // Prevent duplicate calls across dev StrictMode mounts by short-circuiting
+      const lastGen = sessionStorage.getItem("tm_last_qr_gen");
+      if (lastGen && Date.now() - Number(lastGen) < 3000) return;
+      try {
+        const userId = String(user.id);
+        const res = await triggerGenerateQR({ userId }).unwrap();
+        const tok = (res as any)?.token as string;
+        setToken(tok);
+        const end = new Date();
+        end.setMinutes(end.getMinutes() + 10);
+        sessionStorage.setItem("tm_last_qr_gen", String(Date.now()));
+      } catch (e) {
+        // Silent failure; UI remains with placeholder
       }
-      const s = Math.floor(diff / 1000);
-      const h = Math.floor(s / 3600);
-      const m = Math.floor((s % 3600) / 60);
-      const sec = s % 60;
-      setRemaining(`${h}h ${m}m ${sec}s`);
     };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [expiry]);
+    generate();
+    // regenerate when user changes
+  }, [user.id, token]);
 
   return (
     <Box
@@ -66,7 +63,7 @@ export default function TodaysToken() {
           <Card withBorder radius="md" w="100%">
             <Stack gap="md" align="center">
               <Text fw={600} c="gray.7" style={{ fontSize: 20 }} ta="center">
-                QR Token for John Doe
+                QR Token {user?.full_name ? `for ${user.full_name}` : ""}
               </Text>
               <Text c="dimmed" ta="center">
                 Show this QR code at the lunch counter
@@ -74,14 +71,17 @@ export default function TodaysToken() {
 
               <Card withBorder radius="md" p="md" w={260} h={260}>
                 <Center h="100%">
-                  <IconQrcode
-                    size={180}
-                    style={{ color: theme.colors.gray[8] }}
-                  />
+                  {token ? (
+                    <QRCode value={token} size={180} />
+                  ) : (
+                    <Text c="dimmed">Generate your QR token</Text>
+                  )}
                 </Center>
               </Card>
 
-              <Card
+              {/* QR generates on load; no button required */}
+
+              {/* <Card
                 withBorder
                 radius="md"
                 p="md"
@@ -114,11 +114,18 @@ export default function TodaysToken() {
                     </Stack>
                   </Group>
 
-                  <Badge color="blue" radius="sm">
-                    Active
+                  <Badge
+                    color={remaining === "Expired" ? "red" : "blue"}
+                    radius="sm"
+                  >
+                    {remaining === "Expired"
+                      ? "Expired"
+                      : token
+                        ? "Active"
+                        : "Idle"}
                   </Badge>
                 </Group>
-              </Card>
+              </Card> */}
 
               <Card
                 withBorder
@@ -137,7 +144,7 @@ export default function TodaysToken() {
                     Warning
                   </Text>
                   <Text>
-                    This QR code is valid only for today and expires at 2:00 PM
+                    This QR code is valid for 10 minutes after generation.
                   </Text>
                   <Divider />
                   <Text>• Each token can only be used once</Text>

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import {
   getSubscriptions,
+  isEnrollmentOpen,
   upsertSubscription,
 } from "../services/subscription.service";
 
@@ -21,13 +22,46 @@ export async function listSubscriptions(req: Request, res: Response) {
   }
 }
 
+// export async function saveSubscription(req: Request, res: Response) {
+//   const { userId, planName, status, startDate, endDate } = req.body;
+
+//   if (!userId || !startDate || !endDate) {
+//     return res.status(400).json({ message: "Missing fields" });
+//   }
+
+//   await upsertSubscription(userId, planName, status, startDate, endDate);
+//   res.json({ message: "Subscription saved" });
+// }
 export async function saveSubscription(req: Request, res: Response) {
-  const { userId, planName, status, startDate, endDate } = req.body;
+  try {
+    const { userId, planName, status, startDate, endDate } = req.body;
 
-  if (!userId || !startDate || !endDate) {
-    return res.status(400).json({ message: "Missing fields" });
+    if (!userId || !startDate) {
+      return res.status(400).json({ message: "Missing fields" });
+    }
+
+    // Extract month from startDate (YYYY-MM)
+    const month = new Date(startDate).toISOString().slice(0, 7);
+
+    // 🔹 Check enrollment
+    const enrollmentOpen = await isEnrollmentOpen(month);
+
+    if (!enrollmentOpen) {
+      return res.status(400).json({
+        message: "Enrollment is closed for this month",
+      });
+    }
+
+    await upsertSubscription(
+      userId,
+      planName,
+      status,
+      startDate,
+      endDate || null,
+    );
+
+    res.json({ message: "Subscription saved successfully" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
   }
-
-  await upsertSubscription(userId, planName, status, startDate, endDate);
-  res.json({ message: "Subscription saved" });
 }

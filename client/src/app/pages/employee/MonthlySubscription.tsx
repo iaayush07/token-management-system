@@ -12,7 +12,10 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { IconCalendarMonth } from "@tabler/icons-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useMeSafe } from "../../../shared/utility/hooks/useMeSafe";
+import { useGetEnrollmentStatusQuery } from "./utility/services/enrollmentService";
+import { useSaveSubscriptionMutation } from "./utility/services/subscription.service";
 
 export default function MonthlySubscription() {
   const theme = useMantineTheme();
@@ -22,6 +25,47 @@ export default function MonthlySubscription() {
   const purpleBase = theme.colors.grape[6];
   const brandLight = theme.colors.brand[3];
   const brandBase = theme.colors.brand[6];
+
+  // For now: use current calendar month for enrollment status and submission
+  const now = useMemo(() => new Date(), []);
+  const currentYear = now.getFullYear();
+  const currentMonthNum = now.getMonth() + 1; // 1-12
+  const currentMonthLabel = now.toLocaleString("default", { month: "long" });
+  const currentMonthIso = `${currentYear}-${String(currentMonthNum).padStart(2, "0")}-01`;
+
+  const { user } = useMeSafe();
+  const { data: enrollmentStatus, isFetching: enrollmentLoading } =
+    useGetEnrollmentStatusQuery({ year: currentYear, month: currentMonthNum });
+  const [saveSubscription, { isLoading: saving }] =
+    useSaveSubscriptionMutation();
+
+  const enrollmentOpen = enrollmentStatus?.is_open ?? false;
+
+  const handleSubmit = async () => {
+    if (!user?.id) {
+      console.warn("No user ID found; cannot submit subscription");
+      return;
+    }
+    if (!enrollmentOpen) {
+      console.warn("Enrollment is closed; submission blocked");
+      return;
+    }
+    try {
+      const status: "ACTIVE" | "INACTIVE" =
+        choice === "yes" ? "ACTIVE" : "INACTIVE";
+      const payload = {
+        userId: user.id,
+        planName: "LUNCH",
+        status,
+        startDate: currentMonthIso,
+        endDate: null,
+      };
+      const res = await saveSubscription(payload).unwrap();
+      console.log("Subscription saved", res);
+    } catch (err) {
+      console.error("Failed to save subscription", err);
+    }
+  };
 
   return (
     <Box
@@ -34,7 +78,7 @@ export default function MonthlySubscription() {
     >
       <Text style={{ fontSize: 36 }}>Monthly Subscription 📅</Text>
       <Text c="dimmed" size="sm">
-        Subscribe for lunch access in March 2026
+        Subscribe for lunch access in {currentMonthLabel} {currentYear}
       </Text>
 
       <Grid gutter="md" mt="md">
@@ -60,9 +104,16 @@ export default function MonthlySubscription() {
                 </Avatar>
               </Group>
 
-              <Text>🟢 Enrollment is currently open</Text>
+              <Text>
+                {enrollmentLoading
+                  ? "Checking enrollment status…"
+                  : enrollmentOpen
+                    ? "🟢 Enrollment is currently open"
+                    : "🔴 Enrollment is closed for the target month"}
+              </Text>
               <Text c="gray.7" fw={600}>
-                Do you want to subscribe for lunch in March 2026?
+                Do you want to subscribe for lunch in {currentMonthLabel}{" "}
+                {currentYear}?
               </Text>
 
               {/* Radio Card Options */}
@@ -135,7 +186,32 @@ export default function MonthlySubscription() {
               </Stack>
 
               <Group justify="flex-end">
-                <Button variant="light" color="brand" radius="md">
+                <Button
+                  variant="light"
+                  color="brand"
+                  radius="md"
+                  disabled={
+                    !enrollmentOpen || saving || enrollmentLoading || !user?.id
+                  }
+                  onClick={handleSubmit}
+                  //   {
+                  //   console.log(user?.id, "sub");
+
+                  //   if (!user?.id) return;
+                  //   try {
+                  //     saveSubscription({
+                  //       userId: user.id,
+                  //       planName: "LUNCH",
+                  //       status: choice === "yes" ? "ACTIVE" : "INACTIVE",
+                  //       startDate: currentMonthIso,
+                  //       endDate: null,
+                  //     }).unwrap();
+                  //   } catch {
+                  //     // silently fail; could add notifications if desired
+                  //   }
+                  // }
+                  // }
+                >
                   Submit Subscription
                 </Button>
               </Group>
@@ -157,9 +233,13 @@ export default function MonthlySubscription() {
                     <Card withBorder radius="md" p="md">
                       <Stack gap={4}>
                         <Text fw={600} c="gray.7">
-                          This Month (February 2026)
+                          Current Month ({currentMonthLabel} {currentYear})
                         </Text>
-                        <Text>✅ Subscribed</Text>
+                        <Text>
+                          {choice === "yes"
+                            ? "✅ Will Subscribe"
+                            : "❌ Will Not Subscribe"}
+                        </Text>
                       </Stack>
                     </Card>
                   </Grid.Col>
@@ -169,7 +249,7 @@ export default function MonthlySubscription() {
                         <Text fw={600} c="gray.7">
                           Enrollment Status
                         </Text>
-                        <Text>🟢 Open</Text>
+                        <Text>{enrollmentOpen ? "🟢 Open" : "🔴 Closed"}</Text>
                       </Stack>
                     </Card>
                   </Grid.Col>

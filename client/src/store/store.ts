@@ -3,7 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { tokenManagerService } from "../shared/utility/services/token-management.service";
 
 export const appStore = configureStore({
-  reducer: { [tokenManagerService.reducerPath]: tokenManagerService.reducer },
+  reducer: {
+    [tokenManagerService.reducerPath]: tokenManagerService.reducer,
+  },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(tokenManagerService.middleware),
 });
