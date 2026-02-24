@@ -7,6 +7,7 @@ import TodaysToken from "../app/pages/employee/TodaysToken";
 import Login from "../app/pages/auth/Login";
 import Signup from "../app/pages/auth/Signup";
 import ProtectedRoute from "./ProtectedRoute";
+import ScanToken from "../app/pages/admin/ScanToken";
 
 export default function AppRouting() {
   return (
@@ -25,6 +26,7 @@ export default function AppRouting() {
           path="/admin/month-configuration"
           element={<AdminMonthConfiguration />}
         />
+        <Route path="/admin/scan-token" element={<ScanToken />} />
         <Route path="/admin/reports" element={<Reports />} />
       </Route>
     </Routes>

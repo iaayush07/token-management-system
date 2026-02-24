@@ -17,7 +17,7 @@ app.use("/api/enrollment", enrollmentRoutes);
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
-    service: "Token Management System",
+    service: "Token Management Systemsssssss",
   });
 });
 

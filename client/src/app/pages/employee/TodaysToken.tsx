@@ -1,4 +1,5 @@
 import {
+  Badge,
   Box,
   Card,
   Center,
@@ -11,7 +12,11 @@ import {
 } from "@mantine/core";
 import { useEffect, useState } from "react";
 import QRCode from "react-qr-code";
-import { useGenerateQRMutation } from "./utility/services/employee.service";
+import {
+  useGenerateQRMutation,
+  useGetQRStatusQuery,
+  useGetTodayTokenQuery,
+} from "./utility/services/employee.service";
 
 export default function TodaysToken() {
   const theme = useMantineTheme();
@@ -20,29 +25,50 @@ export default function TodaysToken() {
   const user = raw ? JSON.parse(raw) : null;
   const [triggerGenerateQR, { isLoading: generating }] =
     useGenerateQRMutation();
+  const { data: todayData, isFetching: fetchingToday } = useGetTodayTokenQuery(
+    user?.id ? { userId: String(user.id) } : { userId: "" },
+    { skip: !user?.id },
+  );
+  const { data: statusData } = useGetQRStatusQuery(
+    token ? { token } : { token: "" },
+    {
+      skip: !token,
+    },
+  );
+
+  console.log(token);
 
   useEffect(() => {
-    if (token !== null) return; // Token already generated for this session
-    if (!user?.id || generating) return;
-    const generate = async () => {
-      // Prevent duplicate calls across dev StrictMode mounts by short-circuiting
-      const lastGen = sessionStorage.getItem("tm_last_qr_gen");
-      if (lastGen && Date.now() - Number(lastGen) < 3000) return;
-      try {
-        const userId = String(user.id);
-        const res = await triggerGenerateQR({ userId }).unwrap();
-        const tok = (res as any)?.token as string;
-        setToken(tok);
-        const end = new Date();
-        end.setMinutes(end.getMinutes() + 10);
-        sessionStorage.setItem("tm_last_qr_gen", String(Date.now()));
-      } catch (e) {
-        // Silent failure; UI remains with placeholder
+    if (!user?.id || generating || fetchingToday) return;
+    // If we already have a token set, don't re-run
+    if (token) return;
+
+    const maybeInit = async () => {
+      // First, prefer today's token if exists
+      if (todayData) {
+        if (todayData.status === "unsubscribed") {
+          return;
+        }
+        if (todayData.token) {
+          setToken(todayData.token);
+          return;
+        }
+        if (todayData.status === "none") {
+          try {
+            const res = await triggerGenerateQR({
+              userId: String(user.id),
+            }).unwrap();
+            const tok = (res as any)?.token as string;
+            setToken(tok);
+          } catch (e) {
+            // swallow errors for now; UI shows placeholder
+          }
+          return;
+        }
       }
     };
-    generate();
-    // regenerate when user changes
-  }, [user.id, token]);
+    maybeInit();
+  }, [user?.id, token, todayData, generating, fetchingToday]);
 
   return (
     <Box
@@ -72,60 +98,30 @@ export default function TodaysToken() {
               <Card withBorder radius="md" p="md" w={260} h={260}>
                 <Center h="100%">
                   {token ? (
-                    <QRCode value={token} size={180} />
+                    statusData?.status === "expired" ? (
+                      <Text c="orange.7" ta="center">
+                        Token expired
+                      </Text>
+                    ) : (
+                      <QRCode value={token} size={180} />
+                    )
+                  ) : todayData && todayData.status === "unsubscribed" ? (
+                    <Text c="red.7" ta="center">
+                      Please subscribe for this month to get a token
+                    </Text>
                   ) : (
-                    <Text c="dimmed">Generate your QR token</Text>
+                    <Text c="dimmed">Fetching today's token…</Text>
                   )}
                 </Center>
               </Card>
-
-              {/* QR generates on load; no button required */}
-
-              {/* <Card
-                withBorder
-                radius="md"
-                p="md"
-                w="100%"
-                styles={{
-                  root: {
-                    background: theme.colors.blue[0],
-                  },
-                }}
-              >
-                <Group justify="space-between" align="center">
-                  <Group>
-                    <Avatar
-                      radius={12}
-                      size={40}
-                      styles={{
-                        root: {
-                          background: `linear-gradient(135deg, ${blueBase}, ${blueLight})`,
-                          color: theme.white,
-                        },
-                      }}
-                    >
-                      <IconClock size={22} style={{ color: "white" }} />
-                    </Avatar>
-                    <Stack gap={0}>
-                      <Text fw={600} c="gray.7">
-                        Time Remaining
-                      </Text>
-                      <Text c="gray.7">{remaining}</Text>
-                    </Stack>
-                  </Group>
-
-                  <Badge
-                    color={remaining === "Expired" ? "red" : "blue"}
-                    radius="sm"
-                  >
-                    {remaining === "Expired"
-                      ? "Expired"
-                      : token
-                        ? "Active"
-                        : "Idle"}
-                  </Badge>
-                </Group>
-              </Card> */}
+              {token && (
+                <Badge
+                  radius="sm"
+                  color={statusData?.status === "expired" ? "orange" : "green"}
+                >
+                  {statusData?.status === "expired" ? "Expired" : "Active"}
+                </Badge>
+              )}
 
               <Card
                 withBorder
@@ -143,9 +139,7 @@ export default function TodaysToken() {
                   <Text c="gray.7" fw={600}>
                     Warning
                   </Text>
-                  <Text>
-                    This QR code is valid for 10 minutes after generation.
-                  </Text>
+                  <Text>This QR code is valid until 3:00 PM today.</Text>
                   <Divider />
                   <Text>• Each token can only be used once</Text>
                   <Text>

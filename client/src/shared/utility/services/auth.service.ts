@@ -1,4 +1,4 @@
-import { tokenManagerService } from "./token-management.service";
+import { tokenManagerService } from "../../../app/pages/admin/utility/services/token-management.service";
 
 export const authService = tokenManagerService.injectEndpoints({
   endpoints: (builder) => ({

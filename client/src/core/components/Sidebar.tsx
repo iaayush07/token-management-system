@@ -1,5 +1,10 @@
 import { Box, NavLink, Stack, useMantineTheme } from "@mantine/core";
-import { IconCalendarMonth, IconGauge, IconTicket } from "@tabler/icons-react";
+import {
+  IconCalendarMonth,
+  IconGauge,
+  IconScan,
+  IconTicket,
+} from "@tabler/icons-react";
 import { Link, useLocation } from "react-router-dom";
 import { PermissionGuard } from "../../auth/Authorization";
 
@@ -52,6 +57,12 @@ const Sidebar = () => {
       link: "/admin/month-configuration",
       icon: IconCalendarMonth,
       permission: "READ:MonthConfiguration",
+    },
+    {
+      title: "Scan Token",
+      link: "/admin/scan-token",
+      icon: IconScan,
+      permission: "READ:ScanToken",
     },
     // {
     //   title: "Reports",

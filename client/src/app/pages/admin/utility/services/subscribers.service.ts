@@ -1,5 +1,5 @@
 import type { AxiosResponse } from "axios";
-import { tokenManagerService } from "../../../../../shared/utility/services/token-management.service";
+import { tokenManagerService } from "./token-management.service";
 import type { ISubscriber } from "../models/subscribers.model";
 
 export const subscriberService = tokenManagerService.injectEndpoints({

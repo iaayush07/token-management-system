@@ -10,7 +10,6 @@ export function useEnsurePermissions() {
 
   const token =
     localStorage.getItem("tm_token") || sessionStorage.getItem("tm_token");
-  console.log(hasPermissions || !token);
   const { refetch } = useMeQuery(undefined, { skip: hasPermissions || !token });
 
   useEffect(() => {

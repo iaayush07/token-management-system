@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { useDispatch, useSelector } from "react-redux";
-import { tokenManagerService } from "../shared/utility/services/token-management.service";
+import { tokenManagerService } from "../app/pages/admin/utility/services/token-management.service";
 
 export const appStore = configureStore({
   reducer: {

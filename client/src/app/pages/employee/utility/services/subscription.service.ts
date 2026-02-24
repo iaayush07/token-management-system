@@ -1,4 +1,4 @@
-import { tokenManagerService } from "../../../../../shared/utility/services/token-management.service";
+import { tokenManagerService } from "../../../admin/utility/services/token-management.service";
 
 export type SaveSubscriptionPayload = {
   userId: number | string;

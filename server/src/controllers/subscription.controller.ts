@@ -21,17 +21,6 @@ export async function listSubscriptions(req: Request, res: Response) {
     res.status(500).json({ message: error.message });
   }
 }
-
-// export async function saveSubscription(req: Request, res: Response) {
-//   const { userId, planName, status, startDate, endDate } = req.body;
-
-//   if (!userId || !startDate || !endDate) {
-//     return res.status(400).json({ message: "Missing fields" });
-//   }
-
-//   await upsertSubscription(userId, planName, status, startDate, endDate);
-//   res.json({ message: "Subscription saved" });
-// }
 export async function saveSubscription(req: Request, res: Response) {
   try {
     const { userId, planName, status, startDate, endDate } = req.body;
@@ -65,3 +54,5 @@ export async function saveSubscription(req: Request, res: Response) {
     res.status(500).json({ message: error.message });
   }
 }
+
+// Subscription status is now reported via /qr/today to simplify client flow.

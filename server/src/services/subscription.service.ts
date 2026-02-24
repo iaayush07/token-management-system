@@ -77,3 +77,30 @@ export async function isEnrollmentOpen(month: string): Promise<boolean> {
 
   return result.rows[0].is_open;
 }
+
+export async function isUserSubscribedForMonth(
+  userId: string,
+  month: string,
+): Promise<{ subscribed: boolean; planName?: string; status?: string }> {
+  // month format expected: 'YYYY-MM'
+  const result = await pool.query(
+    `
+    SELECT "planName", status
+    FROM subscriptions
+    WHERE "userId" = $1
+      AND "subscriptionMonth" = date_trunc('month', to_date($2 || '-01', 'YYYY-MM-DD'))
+      AND status = 'ACTIVE'
+    LIMIT 1
+    `,
+    [userId, month],
+  );
+
+  if (result.rows.length === 0) {
+    return { subscribed: false };
+  }
+  return {
+    subscribed: true,
+    planName: result.rows[0].planName,
+    status: result.rows[0].status,
+  };
+}

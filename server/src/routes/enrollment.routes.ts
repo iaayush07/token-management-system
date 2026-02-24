@@ -12,4 +12,9 @@ router.post("/toggle", updateEnrollment);
 // Get enrollment status
 router.get("", fetchEnrollment);
 
+// Health endpoint for enrollment routes
+router.get("/health", (_req, res) => {
+  res.json({ status: "ok", route: "enrollment" });
+});
+
 export default router;

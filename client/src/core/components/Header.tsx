@@ -9,7 +9,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import { useAppDispatch } from "../../store/store";
-import { tokenManagerService } from "../../shared/utility/services/token-management.service";
+import { tokenManagerService } from "../../app/pages/admin/utility/services/token-management.service";
 import { generateInitials } from "../../shared/utility/helpers/token-management.helper";
 
 const Header = () => {
